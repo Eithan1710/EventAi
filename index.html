@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#0B0E17; --surface:#141826; --surface2:#1B2033; --border:#262C42;
@@ -81,14 +82,34 @@ select{
 .overnight-note{font-size:12px; color:var(--accent2); margin-top:-2px;}
 .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:26px; line-height:1.7;}
 .hint{font-size:12px; color:var(--muted); margin-top:10px;}
+.settings-toggle{position:absolute; top:24px; left:16px; background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:6px;}
+header{position:relative;}
+.settings{display:none; margin-bottom:16px;}
+.settings.show{display:block;}
+.settings p{font-size:12.5px; color:var(--muted); line-height:1.7; margin:0 0 10px;}
+.settings a{color:var(--accent2);}
+.status{font-size:13.5px; margin-top:12px; text-align:center; min-height:0; line-height:1.6;}
+.status.ok{color:var(--accent2);}
+.status.err{color:var(--danger);}
+.status a{color:inherit; text-decoration:underline;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <button type="button" class="settings-toggle" id="settingsToggle" title="הגדרות">⚙️</button>
     <h1>📅 Event Planner</h1>
     <p>מהזרם ישר ליומן שלך</p>
   </header>
+
+  <div class="card settings" id="settingsPanel">
+    <p>
+      כדי שהאתר יוכל להוסיף אירועים ליומן שלך בלי לצאת מהעמוד, צריך Google OAuth Client ID אישי (פעם אחת, חינם).
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">פתח Google Cloud Console</a> → צור Client ID מסוג "Web application" → הוסף את הכתובת של האתר הזה כ-Authorized JavaScript origin.
+    </p>
+    <div class="field"><label>Google Client ID</label><input type="text" id="clientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com"></div>
+    <button type="button" class="btn btn-primary" id="saveClientId">שמור</button>
+  </div>
 
   <div class="card">
     <label for="input">מה עשית / מה אתה מתכנן?</label>
@@ -111,12 +132,14 @@ select{
 
     <div class="row2" style="margin-top:14px;">
       <button type="button" class="btn btn-ghost" id="editBtn">✏️ ערוך</button>
-      <button type="button" class="btn btn-cal" id="calBtn">📅 הוסף ל-Google Calendar</button>
+      <button type="button" class="btn btn-cal" id="calBtn">✅ הוסף ליומן Google</button>
     </div>
+    <div class="status" id="statusMsg"></div>
 
     <div class="editgrid" id="editGrid">
       <div class="field"><label>שם האירוע</label><input type="text" id="eTitle"></div>
-      <div class="field"><label>תאריך</label><input type="date" id="eDate"></div>
+      <div class="field"><label>תאריך התחלה</label><input type="date" id="eDate"></div>
+      <div class="field"><label>תאריך סיום</label><input type="date" id="eEndDate"></div>
       <div class="timegrid">
         <div class="field"><label>שעת התחלה</label><input type="time" id="eStart"></div>
         <div class="field"><label>שעת סיום</label><input type="time" id="eEnd"></div>
@@ -132,8 +155,8 @@ select{
   </div>
 
   <div class="foot">
-    הכל נשאר בדפדפן שלך. אין שרת, אין שמירה, אין מעקב.<br>
-    Google Calendar הוא המקום היחיד שבו האירוע נשמר.
+    הטקסט שאתה כותב נשאר בדפדפן שלך. אין שרת, אין שמירה, אין מעקב.<br>
+    האירוע נכתב ישירות ליומן Google שלך דרך ה-API הרשמי שלהם, מבלי לצאת מהעמוד.
   </div>
 </div>
 
@@ -183,28 +206,32 @@ function detectCategory(text){
   return CATS.find(c=>c.k==='other');
 }
 
-function detectDate(text){
+function detectDateRange(text){
   const today = todayLocal();
-  // dd.mm or dd/mm
-  let m = text.match(/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/);
-  if(m){
+  const dateRegex = /(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/g;
+  const matches = [...text.matchAll(dateRegex)];
+  function toDate(m){
     let day=+m[1], month=+m[2]-1, year = m[3] ? (m[3].length===2?2000+ +m[3]: +m[3]) : today.getFullYear();
     return new Date(year, month, day);
   }
-  if(text.includes('מחר')) { let d=new Date(today); d.setDate(d.getDate()+1); return d; }
-  if(text.includes('היום')) return today;
+  if(matches.length>=2){
+    return {start: toDate(matches[0]), end: toDate(matches[1]), strs:[matches[0][0], matches[1][0]], multiDay:true};
+  }
+  if(matches.length===1){
+    return {start: toDate(matches[0]), end: null, strs:[matches[0][0]], multiDay:false};
+  }
+  if(text.includes('מחר')){ let d=new Date(today); d.setDate(d.getDate()+1); return {start:d, end:null, strs:['מחר'], multiDay:false}; }
+  if(text.includes('היום')) return {start:today, end:null, strs:['היום'], multiDay:false};
   for(let i=0;i<DAYS.length;i++){
     if(text.includes(DAYS[i])){
       let d=new Date(today);
       let diff = (i - d.getDay() + 7) % 7;
       if(diff===0 && text.includes('הבא')) diff = 7;
-      if(diff===0) diff = 0; // same day if not specified otherwise
       d.setDate(d.getDate()+diff);
-      if(text.includes('הבא') && diff < 7 && diff>0){} // keep
-      return d;
+      return {start:d, end:null, strs:['יום '+DAYS[i]], multiDay:false};
     }
   }
-  return null; // uncertain
+  return {start: today, end:null, strs:[], multiDay:false};
 }
 
 function timeToParts(str){
@@ -215,6 +242,15 @@ function timeToParts(str){
   let h = +m[1];
   let min = m[2] ? +m[2] : (half ? 30 : 0);
   return {h,m:min};
+}
+
+function detectLabeledTimes(text){
+  const sM = text.match(/התחלה[^0-9]{0,6}(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
+  const eM = text.match(/סיום[^0-9]{0,6}(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
+  if(sM && eM){
+    return {start: timeToParts(sM[1]), end: timeToParts(eM[1]), strs:[sM[0], eM[0]]};
+  }
+  return null;
 }
 
 function detectTimes(text){
@@ -233,30 +269,36 @@ function detectTimes(text){
   return {start:null,end:null};
 }
 
-function extractTitle(text, dateMatchStr, timeMatchStr){
+function extractTitle(text, dateStrs, timeStrs){
   let t = text;
-  if(dateMatchStr) t = t.replace(dateMatchStr,'');
-  if(timeMatchStr) t = t.replace(timeMatchStr,'');
-  t = t.replace(/(בין|מ-|משעה|עד|ל-|היום|מחר|הבא|ב-|בשעה)/g,' ');
+  (dateStrs||[]).forEach(s=>{ if(s) t = t.replace(s,''); });
+  (timeStrs||[]).forEach(s=>{ if(s) t = t.replace(s,''); });
+  t = t.replace(/(בין|מ-|משעה|עד|ל-|היום|מחר|הבא|ב-|בשעה|התחלה|סיום)/g,' ');
   DAYS.forEach(d=>t=t.replace(new RegExp('יום\\s*'+d),' '));
+  t = t.replace(/[-–]/g,' ');
   t = t.replace(/\s+/g,' ').trim();
   return t || 'אירוע חדש';
 }
-
-let state = null;
 
 function analyze(){
   const raw = document.getElementById('input').value.trim();
   if(!raw) return;
 
   const cat = detectCategory(raw);
-  const date = detectDate(raw) || todayLocal();
-  const dateMatch = raw.match(/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/);
-  const times = detectTimes(raw);
-  const timeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/) ||
-                     raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+  const dr = detectDateRange(raw);
 
-  const title = extractTitle(raw, dateMatch?dateMatch[0]:null, timeMatch?timeMatch[0]:null);
+  const labeled = detectLabeledTimes(raw);
+  let times, timeStrs;
+  if(labeled){
+    times = labeled; timeStrs = labeled.strs;
+  } else {
+    times = detectTimes(raw);
+    const rangeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+    const singleMatch = raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+    timeStrs = [rangeMatch?rangeMatch[0]:null, singleMatch?singleMatch[0]:null].filter(Boolean);
+  }
+
+  const title = extractTitle(raw, dr.strs, timeStrs);
 
   const startH = times.start ? times.start.h : 19;
   const startM = times.start ? times.start.m : 0;
@@ -264,14 +306,18 @@ function analyze(){
   if(times.end){ endH=times.end.h; endM=times.end.m; }
   else { endH = (startH+1)%24; endM = startM; }
 
-  let startDate = new Date(date);
+  let startDate = new Date(dr.start);
   startDate.setHours(startH, startM, 0, 0);
-  let endDate = new Date(date);
+  let endBase = (dr.multiDay && dr.end) ? dr.end : dr.start;
+  let endDate = new Date(endBase);
   endDate.setHours(endH, endM, 0, 0);
-  let overnight = false;
-  if(endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
 
-  state = { title, cat: cat.k, start: startDate, end: endDate, location:'', notes:'', overnight };
+  let overnight = false;
+  if(!dr.multiDay && endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
+
+  const multiDay = startDate.toDateString() !== endDate.toDateString();
+
+  state = { title, cat: cat.k, start: startDate, end: endDate, location:'', notes:'', overnight, multiDay };
   fillCatSelect();
   render();
   document.getElementById('previewCard').classList.add('show');
@@ -291,10 +337,15 @@ function render(){
   document.getElementById('catIcon').textContent = c.e;
   document.getElementById('pTitle').textContent = state.title;
   const dOpts = {day:'2-digit', month:'2-digit', year:'numeric'};
-  document.getElementById('pDate').textContent = state.start.toLocaleDateString('he-IL', dOpts);
+  document.getElementById('pDate').textContent = state.multiDay
+    ? `${state.start.toLocaleDateString('he-IL', dOpts)} – ${state.end.toLocaleDateString('he-IL', dOpts)}`
+    : state.start.toLocaleDateString('he-IL', dOpts);
   document.getElementById('pTime').textContent = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())} – ${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
   document.getElementById('pCat').textContent = `${c.e} ${c.l}`;
-  document.getElementById('overnightNote').style.display = state.overnight ? 'block' : 'none';
+  const note = document.getElementById('overnightNote');
+  if(state.multiDay){ note.style.display='block'; note.textContent='📆 אירוע רב-יומי'; }
+  else if(state.overnight){ note.style.display='block'; note.textContent='⤴️ האירוע מסתיים למחרת'; }
+  else note.style.display='none';
   const locLine = document.getElementById('pLocLine');
   if(state.location){ locLine.style.display='flex'; document.getElementById('pLoc').textContent = state.location; }
   else locLine.style.display='none';
@@ -302,6 +353,7 @@ function render(){
   // sync edit fields
   document.getElementById('eTitle').value = state.title;
   document.getElementById('eDate').value = `${state.start.getFullYear()}-${pad(state.start.getMonth()+1)}-${pad(state.start.getDate())}`;
+  document.getElementById('eEndDate').value = `${state.end.getFullYear()}-${pad(state.end.getMonth()+1)}-${pad(state.end.getDate())}`;
   document.getElementById('eStart').value = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())}`;
   document.getElementById('eEnd').value = `${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
   document.getElementById('eCat').value = state.cat;
@@ -311,39 +363,120 @@ function render(){
 
 function applyEdits(){
   const [y,mo,da] = document.getElementById('eDate').value.split('-').map(Number);
+  const [y2,mo2,da2] = document.getElementById('eEndDate').value.split('-').map(Number);
   const [sh,sm] = document.getElementById('eStart').value.split(':').map(Number);
   const [eh,em] = document.getElementById('eEnd').value.split(':').map(Number);
   let s = new Date(y, mo-1, da, sh, sm);
-  let e = new Date(y, mo-1, da, eh, em);
+  let e = new Date(y2, mo2-1, da2, eh, em);
   let overnight = false;
-  if(e <= s){ e.setDate(e.getDate()+1); overnight = true; }
+  if(e <= s && y===y2 && mo===mo2 && da===da2){ e.setDate(e.getDate()+1); overnight = true; }
+  const multiDay = s.toDateString() !== e.toDateString();
   state = {
     title: document.getElementById('eTitle').value.trim() || 'אירוע חדש',
     cat: document.getElementById('eCat').value,
     start: s, end: e,
     location: document.getElementById('eLoc').value.trim(),
     notes: document.getElementById('eNotes').value.trim(),
-    overnight
+    overnight, multiDay
   };
   render();
   document.getElementById('editGrid').classList.remove('show');
 }
 
-function toGCalStr(d){
-  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+let tokenClient = null;
+let accessToken = null;
+
+function getClientId(){ return localStorage.getItem('gcal_client_id') || ''; }
+
+function setStatus(msg, cls){
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' '+cls : '');
 }
 
-function openGCal(){
-  const c = catObj(state.cat);
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: state.title,
-    dates: `${toGCalStr(state.start)}/${toGCalStr(state.end)}`,
-    details: `${c.e} ${c.l}${state.notes ? ' — ' + state.notes : ''}`,
-    location: state.location || ''
+function initGIS(){
+  const cid = getClientId();
+  if(!cid || !window.google || !google.accounts) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: ()=>{} // overridden per-call
   });
-  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
 }
+
+function ensureToken(){
+  return new Promise((resolve, reject)=>{
+    const cid = getClientId();
+    if(!cid){ reject({code:'no-client-id'}); return; }
+    if(!tokenClient) initGIS();
+    if(!tokenClient){ reject({code:'gis-not-ready'}); return; }
+    tokenClient.callback = (resp)=>{
+      if(resp.error){ reject(resp); return; }
+      accessToken = resp.access_token;
+      resolve(accessToken);
+    };
+    tokenClient.requestAccessToken({prompt: accessToken ? '' : 'consent'});
+  });
+}
+
+function toRFC3339(d){
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+}
+
+async function addToCalendar(){
+  try{
+    setStatus('מתחבר ל-Google…');
+    const token = await ensureToken();
+    setStatus('מוסיף אירוע…');
+    const c = catObj(state.cat);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const body = {
+      summary: state.title,
+      location: state.location || undefined,
+      description: `${c.e} ${c.l}${state.notes ? ' — ' + state.notes : ''}`,
+      start: { dateTime: toRFC3339(state.start), timeZone: tz },
+      end: { dateTime: toRFC3339(state.end), timeZone: tz }
+    };
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){
+      if(res.status === 401){ accessToken = null; }
+      const err = await res.json().catch(()=>({}));
+      throw err;
+    }
+    const data = await res.json();
+    setStatus('✅ האירוע נוסף ליומן שלך', 'ok');
+    document.getElementById('input').value = '';
+    setTimeout(()=>{
+      document.getElementById('previewCard').classList.remove('show');
+      document.getElementById('editGrid').classList.remove('show');
+      setStatus('');
+    }, 1800);
+  } catch(err){
+    if(err && err.code === 'no-client-id'){
+      document.getElementById('settingsPanel').classList.add('show');
+      setStatus('צריך קודם להגדיר Google Client ID למעלה (⚙️)', 'err');
+    } else {
+      setStatus('❌ לא הצלחנו להוסיף את האירוע, נסה שוב', 'err');
+    }
+  }
+}
+
+document.getElementById('settingsToggle').addEventListener('click', ()=>{
+  document.getElementById('clientIdInput').value = getClientId();
+  document.getElementById('settingsPanel').classList.toggle('show');
+});
+document.getElementById('saveClientId').addEventListener('click', ()=>{
+  localStorage.setItem('gcal_client_id', document.getElementById('clientIdInput').value.trim());
+  accessToken = null;
+  initGIS();
+  document.getElementById('settingsPanel').classList.remove('show');
+  setStatus('נשמר ✓', 'ok');
+});
+window.addEventListener('load', initGIS);
 
 document.getElementById('analyzeBtn').addEventListener('click', ()=>{
   document.getElementById('input').blur();
@@ -353,7 +486,7 @@ document.getElementById('editBtn').addEventListener('click', ()=>{
   document.getElementById('editGrid').classList.toggle('show');
 });
 document.getElementById('applyBtn').addEventListener('click', applyEdits);
-document.getElementById('calBtn').addEventListener('click', openGCal);
+document.getElementById('calBtn').addEventListener('click', addToCalendar);
 document.querySelectorAll('.chip').forEach(ch=>{
   ch.addEventListener('click', ()=>{
     document.getElementById('input').value = ch.dataset.ex;
