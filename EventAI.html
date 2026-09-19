@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Event Planner</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Event Planner">
+<meta name="theme-color" content="#0B0E17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E17; --surface:#141826; --surface2:#1B2033; --border:#262C42;
+  --text:#EDEFF5; --muted:#8B92A8; --accent:#6C5CE7; --accent2:#22D3A5;
+  --danger:#F26D6D;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Heebo',sans-serif; min-height:100vh;
+  padding:24px 16px 60px; display:flex; justify-content:center;
+}
+.wrap{width:100%; max-width:480px;}
+header{text-align:center; margin-bottom:22px;}
+header h1{font-size:26px; font-weight:800; margin:0 0 4px; letter-spacing:-0.5px;}
+header p{color:var(--muted); font-size:14px; margin:0;}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
+  padding:18px; margin-bottom:16px;
+}
+label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px; font-weight:500;}
+textarea{
+  width:100%; min-height:90px; background:var(--surface2); color:var(--text);
+  border:1px solid var(--border); border-radius:14px; padding:14px; font-size:16px;
+  font-family:inherit; resize:none; line-height:1.5; transition:border-color .15s;
+}
+textarea:focus{outline:none; border-color:var(--accent);}
+.examples{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+.chip{
+  background:var(--surface2); border:1px solid var(--border); color:var(--muted);
+  padding:7px 12px; border-radius:100px; font-size:12.5px; cursor:pointer; border:1px solid var(--border);
+  transition:all .15s;
+}
+.chip:active{transform:scale(.96);}
+.btn{
+  width:100%; border:none; border-radius:14px; padding:15px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:inherit; transition:transform .1s, opacity .15s;
+}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--accent); color:#fff; margin-top:14px;}
+.btn-primary:disabled{opacity:.4; cursor:default;}
+.btn-cal{background:var(--accent2); color:#08261e;}
+.btn-ghost{background:transparent; border:1px solid var(--border); color:var(--text);}
+.row2{display:flex; gap:10px;}
+.row2 .btn{flex:1;}
+
+.preview{display:none;}
+.preview.show{display:block; animation:up .25s ease;}
+@keyframes up{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+.p-title{font-size:20px; font-weight:800; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+.p-line{display:flex; align-items:center; gap:10px; font-size:15px; color:var(--text); padding:6px 0;}
+.p-line .ico{width:20px; text-align:center; opacity:.85;}
+.p-line .muted{color:var(--muted);}
+.editgrid{display:none; gap:12px; flex-direction:column; margin-top:10px;}
+.editgrid.show{display:flex;}
+.field{display:flex; flex-direction:column; gap:6px;}
+input[type=text], input[type=date], input[type=time]{
+  background:var(--surface2); color:var(--text); border:1px solid var(--border);
+  border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;
+}
+select{
+  background:var(--surface2); color:var(--text); border:1px solid var(--border);
+  border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;
+}
+.timegrid{display:flex; gap:10px;}
+.timegrid .field{flex:1;}
+.overnight-note{font-size:12px; color:var(--accent2); margin-top:-2px;}
+.foot{text-align:center; color:var(--muted); font-size:12px; margin-top:26px; line-height:1.7;}
+.hint{font-size:12px; color:var(--muted); margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📅 Event Planner</h1>
+    <p>מהזרם ישר ליומן שלך</p>
+  </header>
+
+  <div class="card">
+    <label for="input">מה עשית / מה אתה מתכנן?</label>
+    <textarea id="input" placeholder="לדוגמה: מסיבת בריכה 18.9 בין 12:30 ל-16:00"></textarea>
+    <div class="examples">
+      <div class="chip" data-ex="מסיבת בריכה 18.9 12:30-16:00">מסיבת בריכה 18.9 12:30-16:00</div>
+      <div class="chip" data-ex="סלסה ביום שלישי ב-20:00">סלסה ביום שלישי ב-20:00</div>
+      <div class="chip" data-ex="יציאה עם חברים ביום שישי ב-22:00">יציאה עם חברים ביום שישי ב-22:00</div>
+    </div>
+    <button type="button" class="btn btn-primary" id="analyzeBtn">צור אירוע</button>
+  </div>
+
+  <div class="card preview" id="previewCard">
+    <div class="p-title"><span id="catIcon">📌</span><span id="pTitle">שם האירוע</span></div>
+    <div class="p-line"><span class="ico">📅</span><span id="pDate">-</span></div>
+    <div class="p-line"><span class="ico">🕐</span><span id="pTime">-</span></div>
+    <div class="p-line"><span class="ico">🏷️</span><span id="pCat">-</span></div>
+    <div class="p-line" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
+    <div class="overnight-note" id="overnightNote" style="display:none;">⤴️ האירוע מסתיים למחרת</div>
+
+    <div class="row2" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost" id="editBtn">✏️ ערוך</button>
+      <button type="button" class="btn btn-cal" id="calBtn">📅 הוסף ל-Google Calendar</button>
+    </div>
+
+    <div class="editgrid" id="editGrid">
+      <div class="field"><label>שם האירוע</label><input type="text" id="eTitle"></div>
+      <div class="field"><label>תאריך</label><input type="date" id="eDate"></div>
+      <div class="timegrid">
+        <div class="field"><label>שעת התחלה</label><input type="time" id="eStart"></div>
+        <div class="field"><label>שעת סיום</label><input type="time" id="eEnd"></div>
+      </div>
+      <div class="field"><label>קטגוריה</label>
+        <select id="eCat"></select>
+      </div>
+      <div class="field"><label>מיקום (אופציונלי)</label><input type="text" id="eLoc"></div>
+      <div class="field"><label>הערות (אופציונלי)</label><input type="text" id="eNotes"></div>
+      <button type="button" class="btn btn-primary" id="applyBtn">עדכן תצוגה מקדימה</button>
+    </div>
+    <div class="hint" id="uncertainHint" style="display:none;"></div>
+  </div>
+
+  <div class="foot">
+    הכל נשאר בדפדפן שלך. אין שרת, אין שמירה, אין מעקב.<br>
+    Google Calendar הוא המקום היחיד שבו האירוע נשמר.
+  </div>
+</div>
+
+<script>
+const CATS = [
+  {k:'friends', e:'🎉', l:'יציאה עם חברים', words:['חברים','יציאה']},
+  {k:'bar', e:'🍻', l:'ברים / מסיבות', words:['בר','מסיבה','פאב','שתייה']},
+  {k:'beach', e:'🏖️', l:'ים / בריכה', words:['ים','בריכה','חוף']},
+  {k:'dance', e:'💃', l:'סלסה / ריקודים', words:['סלסה','ריקוד','ריקודים','באצ׳טה','דאנס']},
+  {k:'gym', e:'🏋️', l:'חדר כושר', words:['כושר','ג׳ים','אימון','חדר כושר']},
+  {k:'trip', e:'✈️', l:'טיולים', words:['טיול','טיסה','נסיעה','חופשה']},
+  {k:'games', e:'🎮', l:'משחקים', words:['משחק','גיימינג','פלייסטיישן','משחקים']},
+  {k:'movie', e:'🎬', l:'סרטים / בידור', words:['סרט','קולנוע','הופעה','מופע']},
+  {k:'family', e:'👨‍👩‍👦', l:'משפחה', words:['משפחה','הורים','סבתא','סבא']},
+  {k:'date', e:'❤️', l:'דייטים', words:['דייט','רומנטי']},
+  {k:'study', e:'📚', l:'לימודים', words:['לימוד','שיעור','בחינה','מבחן','קורס']},
+  {k:'work', e:'💼', l:'עבודה', words:['עבודה','פגישה','ישיבה','מייל']},
+  {k:'other', e:'📌', l:'אחר', words:[]}
+];
+const DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+function pad(n){return String(n).padStart(2,'0');}
+function todayLocal(){const d=new Date(); d.setHours(0,0,0,0); return d;}
+
+const HE_PREFIXES = ['ב','ל','מ','ו','ה','כ','ש'];
+
+function tokenCandidates(token){
+  // a token and its forms with 1-2 leading Hebrew prepositions/conjunctions stripped
+  const forms = new Set([token]);
+  if(token.length>1 && HE_PREFIXES.includes(token[0])){
+    forms.add(token.slice(1));
+    if(token.length>2 && HE_PREFIXES.includes(token[1])) forms.add(token.slice(2));
+  }
+  return forms;
+}
+
+function detectCategory(text){
+  const tokens = text.split(/[^א-ת]+/).filter(Boolean);
+  const allForms = new Set();
+  tokens.forEach(t=>tokenCandidates(t).forEach(f=>allForms.add(f)));
+  for(const c of CATS){
+    if(c.k==='other' || c.k==='friends') continue;
+    if(c.words.some(w=>allForms.has(w))) return c;
+  }
+  const friends = CATS.find(c=>c.k==='friends');
+  if(friends.words.some(w=>allForms.has(w))) return friends;
+  return CATS.find(c=>c.k==='other');
+}
+
+function detectDate(text){
+  const today = todayLocal();
+  // dd.mm or dd/mm
+  let m = text.match(/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/);
+  if(m){
+    let day=+m[1], month=+m[2]-1, year = m[3] ? (m[3].length===2?2000+ +m[3]: +m[3]) : today.getFullYear();
+    return new Date(year, month, day);
+  }
+  if(text.includes('מחר')) { let d=new Date(today); d.setDate(d.getDate()+1); return d; }
+  if(text.includes('היום')) return today;
+  for(let i=0;i<DAYS.length;i++){
+    if(text.includes(DAYS[i])){
+      let d=new Date(today);
+      let diff = (i - d.getDay() + 7) % 7;
+      if(diff===0 && text.includes('הבא')) diff = 7;
+      if(diff===0) diff = 0; // same day if not specified otherwise
+      d.setDate(d.getDate()+diff);
+      if(text.includes('הבא') && diff < 7 && diff>0){} // keep
+      return d;
+    }
+  }
+  return null; // uncertain
+}
+
+function timeToParts(str){
+  // returns {h,m}
+  let half = str.includes('וחצי');
+  let m = str.match(/(\d{1,2})(?::(\d{2}))?/);
+  if(!m) return null;
+  let h = +m[1];
+  let min = m[2] ? +m[2] : (half ? 30 : 0);
+  return {h,m:min};
+}
+
+function detectTimes(text){
+  // patterns: "בין X ל-Y", "מ-X עד Y", "משעה X עד Y", "X-Y", "X עד Y"
+  let m = text.match(/(?:בין|מ-?|משעה)?\s*(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)\s*(?:-|–|עד|ל-?)\s*(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
+  if(m){
+    const s=timeToParts(m[1]), e=timeToParts(m[2]);
+    if(s&&e) return {start:s,end:e};
+  }
+  // single time only
+  let m2 = text.match(/(?:ב-?|בשעה\s*)(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
+  if(m2){
+    const s=timeToParts(m2[1]);
+    if(s) return {start:s,end:null};
+  }
+  return {start:null,end:null};
+}
+
+function extractTitle(text, dateMatchStr, timeMatchStr){
+  let t = text;
+  if(dateMatchStr) t = t.replace(dateMatchStr,'');
+  if(timeMatchStr) t = t.replace(timeMatchStr,'');
+  t = t.replace(/(בין|מ-|משעה|עד|ל-|היום|מחר|הבא|ב-|בשעה)/g,' ');
+  DAYS.forEach(d=>t=t.replace(new RegExp('יום\\s*'+d),' '));
+  t = t.replace(/\s+/g,' ').trim();
+  return t || 'אירוע חדש';
+}
+
+let state = null;
+
+function analyze(){
+  const raw = document.getElementById('input').value.trim();
+  if(!raw) return;
+
+  const cat = detectCategory(raw);
+  const date = detectDate(raw) || todayLocal();
+  const dateMatch = raw.match(/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/);
+  const times = detectTimes(raw);
+  const timeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/) ||
+                     raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+
+  const title = extractTitle(raw, dateMatch?dateMatch[0]:null, timeMatch?timeMatch[0]:null);
+
+  const startH = times.start ? times.start.h : 19;
+  const startM = times.start ? times.start.m : 0;
+  let endH, endM;
+  if(times.end){ endH=times.end.h; endM=times.end.m; }
+  else { endH = (startH+1)%24; endM = startM; }
+
+  let startDate = new Date(date);
+  startDate.setHours(startH, startM, 0, 0);
+  let endDate = new Date(date);
+  endDate.setHours(endH, endM, 0, 0);
+  let overnight = false;
+  if(endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
+
+  state = { title, cat: cat.k, start: startDate, end: endDate, location:'', notes:'', overnight };
+  fillCatSelect();
+  render();
+  document.getElementById('previewCard').classList.add('show');
+  document.getElementById('editGrid').classList.remove('show');
+  document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function fillCatSelect(){
+  const sel = document.getElementById('eCat');
+  sel.innerHTML = CATS.map(c=>`<option value="${c.k}">${c.e} ${c.l}</option>`).join('');
+}
+
+function catObj(k){ return CATS.find(c=>c.k===k) || CATS[CATS.length-1]; }
+
+function render(){
+  const c = catObj(state.cat);
+  document.getElementById('catIcon').textContent = c.e;
+  document.getElementById('pTitle').textContent = state.title;
+  const dOpts = {day:'2-digit', month:'2-digit', year:'numeric'};
+  document.getElementById('pDate').textContent = state.start.toLocaleDateString('he-IL', dOpts);
+  document.getElementById('pTime').textContent = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())} – ${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
+  document.getElementById('pCat').textContent = `${c.e} ${c.l}`;
+  document.getElementById('overnightNote').style.display = state.overnight ? 'block' : 'none';
+  const locLine = document.getElementById('pLocLine');
+  if(state.location){ locLine.style.display='flex'; document.getElementById('pLoc').textContent = state.location; }
+  else locLine.style.display='none';
+
+  // sync edit fields
+  document.getElementById('eTitle').value = state.title;
+  document.getElementById('eDate').value = `${state.start.getFullYear()}-${pad(state.start.getMonth()+1)}-${pad(state.start.getDate())}`;
+  document.getElementById('eStart').value = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())}`;
+  document.getElementById('eEnd').value = `${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
+  document.getElementById('eCat').value = state.cat;
+  document.getElementById('eLoc').value = state.location;
+  document.getElementById('eNotes').value = state.notes;
+}
+
+function applyEdits(){
+  const [y,mo,da] = document.getElementById('eDate').value.split('-').map(Number);
+  const [sh,sm] = document.getElementById('eStart').value.split(':').map(Number);
+  const [eh,em] = document.getElementById('eEnd').value.split(':').map(Number);
+  let s = new Date(y, mo-1, da, sh, sm);
+  let e = new Date(y, mo-1, da, eh, em);
+  let overnight = false;
+  if(e <= s){ e.setDate(e.getDate()+1); overnight = true; }
+  state = {
+    title: document.getElementById('eTitle').value.trim() || 'אירוע חדש',
+    cat: document.getElementById('eCat').value,
+    start: s, end: e,
+    location: document.getElementById('eLoc').value.trim(),
+    notes: document.getElementById('eNotes').value.trim(),
+    overnight
+  };
+  render();
+  document.getElementById('editGrid').classList.remove('show');
+}
+
+function toGCalStr(d){
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+}
+
+function openGCal(){
+  const c = catObj(state.cat);
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: state.title,
+    dates: `${toGCalStr(state.start)}/${toGCalStr(state.end)}`,
+    details: `${c.e} ${c.l}${state.notes ? ' — ' + state.notes : ''}`,
+    location: state.location || ''
+  });
+  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
+}
+
+document.getElementById('analyzeBtn').addEventListener('click', ()=>{
+  document.getElementById('input').blur();
+  analyze();
+});
+document.getElementById('editBtn').addEventListener('click', ()=>{
+  document.getElementById('editGrid').classList.toggle('show');
+});
+document.getElementById('applyBtn').addEventListener('click', applyEdits);
+document.getElementById('calBtn').addEventListener('click', openGCal);
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    document.getElementById('input').value = ch.dataset.ex;
+    analyze();
+  });
+});
+document.getElementById('input').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); analyze(); }
+});
+</script>
+</body>
+</html>
