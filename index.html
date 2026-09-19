@@ -404,18 +404,25 @@ function initGIS(){
   });
 }
 
-function ensureToken(){
+function ensureToken(forceConsent){
   return new Promise((resolve, reject)=>{
     const cid = getClientId();
     if(!cid){ reject({code:'no-client-id'}); return; }
     if(!tokenClient) initGIS();
     if(!tokenClient){ reject({code:'gis-not-ready'}); return; }
     tokenClient.callback = (resp)=>{
-      if(resp.error){ reject(resp); return; }
+      if(resp.error){
+        if(!forceConsent){
+          ensureToken(true).then(resolve).catch(reject);
+        } else {
+          reject(resp);
+        }
+        return;
+      }
       accessToken = resp.access_token;
       resolve(accessToken);
     };
-    tokenClient.requestAccessToken({prompt: accessToken ? '' : 'consent'});
+    tokenClient.requestAccessToken({prompt: forceConsent ? 'consent' : ''});
   });
 }
 
@@ -426,7 +433,7 @@ function toRFC3339(d){
 async function addToCalendar(){
   try{
     setStatus('מתחבר ל-Google…');
-    const token = await ensureToken();
+    const token = await ensureToken(false);
     setStatus('מוסיף אירוע…');
     const c = catObj(state.cat);
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
