@@ -2,40 +2,53 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Event Planner</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Event Planner">
 <meta name="theme-color" content="#0B0E17">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#0B0E17; --surface:#141826; --surface2:#1B2033; --border:#262C42;
   --text:#EDEFF5; --muted:#8B92A8; --accent:#6C5CE7; --accent2:#22D3A5;
   --danger:#F26D6D;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; padding:0;}
+html,body{margin:0; padding:0; height:100%; overflow-x:hidden;}
+html{scroll-padding-top:var(--sat);}
 body{
   background:var(--bg); color:var(--text);
-  font-family:'Heebo',sans-serif; min-height:100vh;
-  padding:24px 16px 60px; display:flex; justify-content:center;
+  font-family:'Heebo',sans-serif; min-height:100%;
 }
-.wrap{width:100%; max-width:480px;}
-header{text-align:center; margin-bottom:22px;}
-header h1{font-size:26px; font-weight:800; margin:0 0 4px; letter-spacing:-0.5px;}
-header p{color:var(--muted); font-size:14px; margin:0;}
+.app{
+  max-width:480px; margin:0 auto;
+  padding:calc(var(--sat) + 14px) 16px calc(var(--sab) + 24px);
+  min-height:100%;
+}
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+.topbar h1{font-size:19px; font-weight:800; margin:0; letter-spacing:-.3px;}
+.icon-btn{
+  width:38px; height:38px; border-radius:12px; border:1px solid var(--border);
+  background:var(--surface); color:var(--muted); font-size:17px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
 .card{
   background:var(--surface); border:1px solid var(--border); border-radius:20px;
-  padding:18px; margin-bottom:16px;
+  padding:18px; margin-bottom:14px;
 }
 label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px; font-weight:500;}
 textarea{
-  width:100%; min-height:90px; background:var(--surface2); color:var(--text);
+  width:100%; min-height:84px; background:var(--surface2); color:var(--text);
   border:1px solid var(--border); border-radius:14px; padding:14px; font-size:16px;
   font-family:inherit; resize:none; line-height:1.5; transition:border-color .15s;
 }
@@ -43,121 +56,149 @@ textarea:focus{outline:none; border-color:var(--accent);}
 .examples{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
 .chip{
   background:var(--surface2); border:1px solid var(--border); color:var(--muted);
-  padding:7px 12px; border-radius:100px; font-size:12.5px; cursor:pointer; border:1px solid var(--border);
-  transition:all .15s;
+  padding:8px 12px; border-radius:100px; font-size:12.5px; cursor:pointer;
 }
 .chip:active{transform:scale(.96);}
 .btn{
-  width:100%; border:none; border-radius:14px; padding:15px; font-size:16px; font-weight:700;
-  cursor:pointer; font-family:inherit; transition:transform .1s, opacity .15s;
+  width:100%; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:inherit; min-height:52px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .1s, opacity .15s;
 }
 .btn:active{transform:scale(.98);}
+.btn:disabled{opacity:.55; pointer-events:none;}
 .btn-primary{background:var(--accent); color:#fff; margin-top:14px;}
-.btn-primary:disabled{opacity:.4; cursor:default;}
 .btn-cal{background:var(--accent2); color:#08261e;}
-.btn-ghost{background:transparent; border:1px solid var(--border); color:var(--text);}
-.row2{display:flex; gap:10px;}
-.row2 .btn{flex:1;}
+.btn-ghost{background:var(--surface2); border:1px solid var(--border); color:var(--text);}
+.row2{display:flex; gap:10px; margin-top:14px;}
+.row2 .btn{flex:1; margin-top:0;}
+.spinner{
+  width:17px; height:17px; border-radius:50%; border:2.5px solid rgba(255,255,255,.35);
+  border-top-color:#fff; animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
 
 .preview{display:none;}
 .preview.show{display:block; animation:up .25s ease;}
 @keyframes up{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
-.p-title{font-size:20px; font-weight:800; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
-.p-line{display:flex; align-items:center; gap:10px; font-size:15px; color:var(--text); padding:6px 0;}
-.p-line .ico{width:20px; text-align:center; opacity:.85;}
-.p-line .muted{color:var(--muted);}
-.editgrid{display:none; gap:12px; flex-direction:column; margin-top:10px;}
-.editgrid.show{display:flex;}
-.field{display:flex; flex-direction:column; gap:6px;}
-input[type=text], input[type=date], input[type=time]{
-  background:var(--surface2); color:var(--text); border:1px solid var(--border);
-  border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;
-}
-select{
-  background:var(--surface2); color:var(--text); border:1px solid var(--border);
-  border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;
-}
-.timegrid{display:flex; gap:10px;}
-.timegrid .field{flex:1;}
-.overnight-note{font-size:12px; color:var(--accent2); margin-top:-2px;}
-.foot{text-align:center; color:var(--muted); font-size:12px; margin-top:26px; line-height:1.7;}
-.hint{font-size:12px; color:var(--muted); margin-top:10px;}
-.settings-toggle{position:absolute; top:24px; left:16px; background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:6px;}
-header{position:relative;}
-.settings{display:none; margin-bottom:16px;}
-.settings.show{display:block;}
-.settings p{font-size:12.5px; color:var(--muted); line-height:1.7; margin:0 0 10px;}
-.settings a{color:var(--accent2);}
+.p-title{font-size:21px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:9px;}
+.p-line{display:flex; align-items:center; gap:10px; font-size:15px; padding:7px 0; border-bottom:1px solid var(--border);}
+.p-line:last-of-type{border-bottom:none;}
+.p-line .ico{width:20px; text-align:center; opacity:.85; flex-shrink:0;}
+.badge{display:inline-block; font-size:12px; color:var(--accent2); background:rgba(34,211,165,.12); padding:4px 10px; border-radius:100px; margin-top:10px;}
+
 .status{font-size:13.5px; margin-top:12px; text-align:center; min-height:0; line-height:1.6;}
 .status.ok{color:var(--accent2);}
 .status.err{color:var(--danger);}
-.status a{color:inherit; text-decoration:underline;}
+
+/* Bottom sheets */
+.backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none;
+  transition:opacity .2s; z-index:40;
+}
+.backdrop.show{opacity:1; pointer-events:auto;}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; background:var(--surface);
+  border-radius:22px 22px 0 0; padding:10px 18px calc(var(--sab) + 20px);
+  max-width:480px; margin:0 auto; transform:translateY(100%);
+  transition:transform .25s ease; z-index:50; max-height:85vh; overflow-y:auto;
+  border:1px solid var(--border); border-bottom:none;
+}
+.sheet.show{transform:translateY(0);}
+.sheet-handle{width:36px; height:4px; background:var(--border); border-radius:4px; margin:6px auto 14px;}
+.sheet h2{font-size:17px; margin:0 0 16px; font-weight:700;}
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+input[type=text], input[type=date], input[type=time]{
+  background:var(--surface2); color:var(--text); border:1px solid var(--border);
+  border-radius:12px; padding:13px 12px; font-size:16px; font-family:inherit; width:100%;
+}
+select{
+  background:var(--surface2); color:var(--text); border:1px solid var(--border);
+  border-radius:12px; padding:13px 12px; font-size:16px; font-family:inherit; width:100%;
+}
+.timegrid{display:flex; gap:10px;}
+.timegrid .field{flex:1;}
+.settings p{font-size:12.5px; color:var(--muted); line-height:1.7; margin:0 0 12px;}
+.settings a{color:var(--accent2);}
+
+.foot{text-align:center; color:var(--muted); font-size:11.5px; margin-top:22px; line-height:1.7;}
+
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F5F6FA; --surface:#fff; --surface2:#F0F1F6; --border:#E4E6EF; --text:#161A2B; --muted:#767C93;
+  }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <button type="button" class="settings-toggle" id="settingsToggle" title="הגדרות">⚙️</button>
+<div class="app">
+  <div class="topbar">
+    <button type="button" class="icon-btn" id="settingsToggle">⚙️</button>
     <h1>📅 Event Planner</h1>
-    <p>מהזרם ישר ליומן שלך</p>
-  </header>
-
-  <div class="card settings" id="settingsPanel">
-    <p>
-      כדי שהאתר יוכל להוסיף אירועים ליומן שלך בלי לצאת מהעמוד, צריך Google OAuth Client ID אישי (פעם אחת, חינם).
-      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">פתח Google Cloud Console</a> → צור Client ID מסוג "Web application" → הוסף את הכתובת של האתר הזה כ-Authorized JavaScript origin.
-    </p>
-    <div class="field"><label>Google Client ID</label><input type="text" id="clientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com"></div>
-    <button type="button" class="btn btn-primary" id="saveClientId">שמור</button>
+    <span style="width:38px"></span>
   </div>
 
   <div class="card">
-    <label for="input">מה עשית / מה אתה מתכנן?</label>
-    <textarea id="input" placeholder="לדוגמה: מסיבת בריכה 18.9 בין 12:30 ל-16:00"></textarea>
+    <label for="input">מה האירוע?</label>
+    <textarea id="input" placeholder="סלסה ביום שלישי בערב"></textarea>
     <div class="examples">
-      <div class="chip" data-ex="מסיבת בריכה 18.9 12:30-16:00">מסיבת בריכה 18.9 12:30-16:00</div>
-      <div class="chip" data-ex="סלסה ביום שלישי ב-20:00">סלסה ביום שלישי ב-20:00</div>
-      <div class="chip" data-ex="יציאה עם חברים ביום שישי ב-22:00">יציאה עם חברים ביום שישי ב-22:00</div>
+      <div class="chip" data-ex="סלסה ביום שלישי בערב">סלסה ביום שלישי בערב</div>
+      <div class="chip" data-ex="סרט בקניון גי ביום חמישי ב-20:00">סרט בקניון גי ביום חמישי 20:00</div>
+      <div class="chip" data-ex="מסיבת יום הולדת בבית של אילאי בשבת ב-21:00">מסיבת יום הולדת בשבת 21:00</div>
     </div>
-    <button type="button" class="btn btn-primary" id="analyzeBtn">צור אירוע</button>
+    <button type="button" class="btn btn-primary" id="analyzeBtn">
+      <span class="spinner" id="spinner" style="display:none;"></span>
+      <span id="analyzeLabel">צור אירוע</span>
+    </button>
   </div>
 
   <div class="card preview" id="previewCard">
     <div class="p-title"><span id="catIcon">📌</span><span id="pTitle">שם האירוע</span></div>
+    <div class="p-line" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
     <div class="p-line"><span class="ico">📅</span><span id="pDate">-</span></div>
     <div class="p-line"><span class="ico">🕐</span><span id="pTime">-</span></div>
     <div class="p-line"><span class="ico">🏷️</span><span id="pCat">-</span></div>
-    <div class="p-line" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
-    <div class="overnight-note" id="overnightNote" style="display:none;">⤴️ האירוע מסתיים למחרת</div>
+    <span class="badge" id="overnightNote" style="display:none;"></span>
 
-    <div class="row2" style="margin-top:14px;">
-      <button type="button" class="btn btn-ghost" id="editBtn">✏️ ערוך</button>
-      <button type="button" class="btn btn-cal" id="calBtn">✅ הוסף ליומן Google</button>
+    <div class="row2">
+      <button type="button" class="btn btn-ghost" id="editBtn">✏️ עריכה</button>
+      <button type="button" class="btn btn-cal" id="calBtn">✅ הוסף ליומן</button>
     </div>
     <div class="status" id="statusMsg"></div>
-
-    <div class="editgrid" id="editGrid">
-      <div class="field"><label>שם האירוע</label><input type="text" id="eTitle"></div>
-      <div class="field"><label>תאריך התחלה</label><input type="date" id="eDate"></div>
-      <div class="field"><label>תאריך סיום</label><input type="date" id="eEndDate"></div>
-      <div class="timegrid">
-        <div class="field"><label>שעת התחלה</label><input type="time" id="eStart"></div>
-        <div class="field"><label>שעת סיום</label><input type="time" id="eEnd"></div>
-      </div>
-      <div class="field"><label>קטגוריה</label>
-        <select id="eCat"></select>
-      </div>
-      <div class="field"><label>מיקום (אופציונלי)</label><input type="text" id="eLoc"></div>
-      <div class="field"><label>הערות (אופציונלי)</label><input type="text" id="eNotes"></div>
-      <button type="button" class="btn btn-primary" id="applyBtn">עדכן תצוגה מקדימה</button>
-    </div>
-    <div class="hint" id="uncertainHint" style="display:none;"></div>
   </div>
 
   <div class="foot">
-    הטקסט שאתה כותב נשאר בדפדפן שלך. אין שרת, אין שמירה, אין מעקב.<br>
-    האירוע נכתב ישירות ליומן Google שלך דרך ה-API הרשמי שלהם, מבלי לצאת מהעמוד.
+    הטקסט נשאר בדפדפן שלך. האירוע נכתב ישירות ליומן Google שלך דרך ה-API הרשמי, בלי לצאת מהעמוד.
   </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<div class="sheet" id="editSheet">
+  <div class="sheet-handle"></div>
+  <h2>עריכת אירוע</h2>
+  <div class="field"><label>שם האירוע</label><input type="text" id="eTitle"></div>
+  <div class="field"><label>מיקום</label><input type="text" id="eLoc" placeholder="לדוגמה: קניון גי"></div>
+  <div class="field"><label>תאריך התחלה</label><input type="date" id="eDate"></div>
+  <div class="field"><label>תאריך סיום</label><input type="date" id="eEndDate"></div>
+  <div class="timegrid">
+    <div class="field"><label>שעת התחלה</label><input type="time" id="eStart"></div>
+    <div class="field"><label>שעת סיום</label><input type="time" id="eEnd"></div>
+  </div>
+  <div class="field"><label>קטגוריה</label><select id="eCat"></select></div>
+  <div class="field"><label>הערות</label><input type="text" id="eNotes"></div>
+  <button type="button" class="btn btn-primary" id="applyBtn">שמירת שינויים</button>
+</div>
+
+<div class="sheet settings" id="settingsPanel">
+  <div class="sheet-handle"></div>
+  <h2>הגדרות</h2>
+  <p>
+    כדי שהאתר יוכל להוסיף אירועים ליומן שלך בלי לצאת מהעמוד, צריך Google OAuth Client ID אישי (פעם אחת, חינם).
+    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">פתח Google Cloud Console</a> → צור Client ID מסוג "Web application" → הוסף את כתובת האתר הזה כ-Authorized JavaScript origin.
+  </p>
+  <div class="field"><label>Google Client ID</label><input type="text" id="clientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com"></div>
+  <button type="button" class="btn btn-primary" id="saveClientId">שמור</button>
 </div>
 
 <script>
@@ -177,14 +218,16 @@ const CATS = [
   {k:'other', e:'📌', l:'אחר', words:[]}
 ];
 const DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const TIME_OF_DAY = {
+  'בבוקר': {h:9, m:0}, 'בצהריים': {h:13, m:0}, 'אחר הצהריים': {h:16, m:0},
+  'בערב': {h:19, m:0}, 'בלילה': {h:22, m:0}
+};
+const HE_PREFIXES = ['ב','ל','מ','ו','ה','כ','ש'];
 
 function pad(n){return String(n).padStart(2,'0');}
 function todayLocal(){const d=new Date(); d.setHours(0,0,0,0); return d;}
 
-const HE_PREFIXES = ['ב','ל','מ','ו','ה','כ','ש'];
-
 function tokenCandidates(token){
-  // a token and its forms with 1-2 leading Hebrew prepositions/conjunctions stripped
   const forms = new Set([token]);
   if(token.length>1 && HE_PREFIXES.includes(token[0])){
     forms.add(token.slice(1));
@@ -214,53 +257,44 @@ function detectDateRange(text){
     let day=+m[1], month=+m[2]-1, year = m[3] ? (m[3].length===2?2000+ +m[3]: +m[3]) : today.getFullYear();
     return new Date(year, month, day);
   }
-  if(matches.length>=2){
-    return {start: toDate(matches[0]), end: toDate(matches[1]), strs:[matches[0][0], matches[1][0]], multiDay:true};
-  }
-  if(matches.length===1){
-    return {start: toDate(matches[0]), end: null, strs:[matches[0][0]], multiDay:false};
-  }
+  if(matches.length>=2) return {start: toDate(matches[0]), end: toDate(matches[1]), strs:[matches[0][0], matches[1][0]], multiDay:true};
+  if(matches.length===1) return {start: toDate(matches[0]), end: null, strs:[matches[0][0]], multiDay:false};
+  if(text.includes('מחרתיים')){ let d=new Date(today); d.setDate(d.getDate()+2); return {start:d, end:null, strs:['מחרתיים'], multiDay:false}; }
   if(text.includes('מחר')){ let d=new Date(today); d.setDate(d.getDate()+1); return {start:d, end:null, strs:['מחר'], multiDay:false}; }
   if(text.includes('היום')) return {start:today, end:null, strs:['היום'], multiDay:false};
   for(let i=0;i<DAYS.length;i++){
-    if(text.includes(DAYS[i])){
+    const dm = text.match(new RegExp('(?:ב)?(?:יום\\s*)?'+DAYS[i]));
+    if(dm){
       let d=new Date(today);
       let diff = (i - d.getDay() + 7) % 7;
       if(diff===0 && text.includes('הבא')) diff = 7;
       d.setDate(d.getDate()+diff);
-      return {start:d, end:null, strs:['יום '+DAYS[i]], multiDay:false};
+      return {start:d, end:null, strs:[dm[0]], multiDay:false};
     }
   }
   return {start: today, end:null, strs:[], multiDay:false};
 }
 
 function timeToParts(str){
-  // returns {h,m}
   let half = str.includes('וחצי');
   let m = str.match(/(\d{1,2})(?::(\d{2}))?/);
   if(!m) return null;
-  let h = +m[1];
-  let min = m[2] ? +m[2] : (half ? 30 : 0);
-  return {h,m:min};
+  return {h:+m[1], m: m[2] ? +m[2] : (half ? 30 : 0)};
 }
 
 function detectLabeledTimes(text){
   const sM = text.match(/התחלה[^0-9]{0,6}(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
   const eM = text.match(/סיום[^0-9]{0,6}(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
-  if(sM && eM){
-    return {start: timeToParts(sM[1]), end: timeToParts(eM[1]), strs:[sM[0], eM[0]]};
-  }
+  if(sM && eM) return {start: timeToParts(sM[1]), end: timeToParts(eM[1]), strs:[sM[0], eM[0]]};
   return null;
 }
 
 function detectTimes(text){
-  // patterns: "בין X ל-Y", "מ-X עד Y", "משעה X עד Y", "X-Y", "X עד Y"
   let m = text.match(/(?:בין|מ-?|משעה)?\s*(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)\s*(?:-|–|עד|ל-?)\s*(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
   if(m){
     const s=timeToParts(m[1]), e=timeToParts(m[2]);
     if(s&&e) return {start:s,end:e};
   }
-  // single time only
   let m2 = text.match(/(?:ב-?|בשעה\s*)(\d{1,2}(?::\d{2})?(?:\s*וחצי)?)/);
   if(m2){
     const s=timeToParts(m2[1]);
@@ -269,20 +303,47 @@ function detectTimes(text){
   return {start:null,end:null};
 }
 
-function extractTitle(text, dateStrs, timeStrs){
+function stripStrings(text, strs){
   let t = text;
-  (dateStrs||[]).forEach(s=>{ if(s) t = t.replace(s,''); });
-  (timeStrs||[]).forEach(s=>{ if(s) t = t.replace(s,''); });
-  t = t.replace(/(בין|מ-|משעה|עד|ל-|היום|מחר|הבא|ב-|בשעה|התחלה|סיום)/g,' ');
-  DAYS.forEach(d=>t=t.replace(new RegExp('יום\\s*'+d),' '));
-  t = t.replace(/[-–]/g,' ');
-  t = t.replace(/\s+/g,' ').trim();
-  return t || 'אירוע חדש';
+  (strs||[]).forEach(s=>{ if(s) t = t.replace(s,' '); });
+  return t;
+}
+
+function cleanConnectors(text){
+  const stop = new Set(['בין','מ-','משעה','עד','ל-','היום','מחר','מחרתיים','הבא','ב-','בשעה','התחלה','סיום','-','–']);
+  const words = text.split(/\s+/).filter(w=>w && !stop.has(w));
+  return words.join(' ').trim();
+}
+
+const CATEGORY_WORDS = new Set(CATS.flatMap(c=>c.words));
+
+// Splits remaining text into {title, location}. A 'ב'-prefixed word that is
+// NOT the very first word, and not itself a known category word, marks the
+// start of a location phrase.
+function splitLocation(text){
+  const words = text.split(/\s+/).filter(Boolean);
+  for(let i=1;i<words.length;i++){
+    if(words[i][0]==='ב' && words[i].length>1 && !CATEGORY_WORDS.has(words[i])){
+      const title = words.slice(0,i).join(' ').trim();
+      const location = (words[i].slice(1) + ' ' + words.slice(i+1).join(' ')).trim();
+      if(title) return {title, location};
+    }
+  }
+  return {title: words.join(' ').trim(), location:''};
+}
+
+let state = null;
+
+function setBtnLoading(on){
+  document.getElementById('spinner').style.display = on ? 'inline-block' : 'none';
+  document.getElementById('analyzeLabel').textContent = on ? 'מנתח…' : 'צור אירוע';
+  document.getElementById('analyzeBtn').disabled = on;
 }
 
 function analyze(){
   const raw = document.getElementById('input').value.trim();
   if(!raw) return;
+  setBtnLoading(true);
 
   const cat = detectCategory(raw);
   const dr = detectDateRange(raw);
@@ -290,38 +351,41 @@ function analyze(){
   const labeled = detectLabeledTimes(raw);
   let times, timeStrs;
   if(labeled){
-    times = labeled; timeStrs = labeled.strs;
+    times = labeled; timeStrs = labeled.strs.slice();
   } else {
     times = detectTimes(raw);
     const rangeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
     const singleMatch = raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
     timeStrs = [rangeMatch?rangeMatch[0]:null, singleMatch?singleMatch[0]:null].filter(Boolean);
   }
+  if(!times.start){
+    for(const w in TIME_OF_DAY){
+      if(raw.includes(w)){ times = {start:TIME_OF_DAY[w], end:null}; timeStrs.push(w); break; }
+    }
+  }
 
-  const title = extractTitle(raw, dr.strs, timeStrs);
+  let clean = stripStrings(raw, dr.strs);
+  clean = stripStrings(clean, timeStrs);
+  clean = cleanConnectors(clean);
+  const {title, location} = splitLocation(clean);
 
   const startH = times.start ? times.start.h : 19;
   const startM = times.start ? times.start.m : 0;
   let endH, endM;
-  if(times.end){ endH=times.end.h; endM=times.end.m; }
-  else { endH = (startH+1)%24; endM = startM; }
+  if(times.end){ endH=times.end.h; endM=times.end.m; } else { endH=(startH+1)%24; endM=startM; }
 
-  let startDate = new Date(dr.start);
-  startDate.setHours(startH, startM, 0, 0);
+  let startDate = new Date(dr.start); startDate.setHours(startH, startM, 0, 0);
   let endBase = (dr.multiDay && dr.end) ? dr.end : dr.start;
-  let endDate = new Date(endBase);
-  endDate.setHours(endH, endM, 0, 0);
-
+  let endDate = new Date(endBase); endDate.setHours(endH, endM, 0, 0);
   let overnight = false;
   if(!dr.multiDay && endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
-
   const multiDay = startDate.toDateString() !== endDate.toDateString();
 
-  state = { title, cat: cat.k, start: startDate, end: endDate, location:'', notes:'', overnight, multiDay };
+  state = { title: title || 'אירוע חדש', cat: cat.k, start: startDate, end: endDate, location, notes:'', overnight, multiDay };
   fillCatSelect();
   render();
+  setBtnLoading(false);
   document.getElementById('previewCard').classList.add('show');
-  document.getElementById('editGrid').classList.remove('show');
   document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
@@ -329,7 +393,6 @@ function fillCatSelect(){
   const sel = document.getElementById('eCat');
   sel.innerHTML = CATS.map(c=>`<option value="${c.k}">${c.e} ${c.l}</option>`).join('');
 }
-
 function catObj(k){ return CATS.find(c=>c.k===k) || CATS[CATS.length-1]; }
 
 function render(){
@@ -343,21 +406,20 @@ function render(){
   document.getElementById('pTime').textContent = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())} – ${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
   document.getElementById('pCat').textContent = `${c.e} ${c.l}`;
   const note = document.getElementById('overnightNote');
-  if(state.multiDay){ note.style.display='block'; note.textContent='📆 אירוע רב-יומי'; }
-  else if(state.overnight){ note.style.display='block'; note.textContent='⤴️ האירוע מסתיים למחרת'; }
+  if(state.multiDay){ note.style.display='inline-block'; note.textContent='📆 אירוע רב-יומי'; }
+  else if(state.overnight){ note.style.display='inline-block'; note.textContent='⤴️ מסתיים למחרת'; }
   else note.style.display='none';
   const locLine = document.getElementById('pLocLine');
   if(state.location){ locLine.style.display='flex'; document.getElementById('pLoc').textContent = state.location; }
   else locLine.style.display='none';
 
-  // sync edit fields
   document.getElementById('eTitle').value = state.title;
+  document.getElementById('eLoc').value = state.location;
   document.getElementById('eDate').value = `${state.start.getFullYear()}-${pad(state.start.getMonth()+1)}-${pad(state.start.getDate())}`;
   document.getElementById('eEndDate').value = `${state.end.getFullYear()}-${pad(state.end.getMonth()+1)}-${pad(state.end.getDate())}`;
   document.getElementById('eStart').value = `${pad(state.start.getHours())}:${pad(state.start.getMinutes())}`;
   document.getElementById('eEnd').value = `${pad(state.end.getHours())}:${pad(state.end.getMinutes())}`;
   document.getElementById('eCat').value = state.cat;
-  document.getElementById('eLoc').value = state.location;
   document.getElementById('eNotes').value = state.notes;
 }
 
@@ -380,30 +442,27 @@ function applyEdits(){
     overnight, multiDay
   };
   render();
-  document.getElementById('editGrid').classList.remove('show');
+  closeSheet('editSheet');
 }
 
+// ---- Google Calendar (in-page, no redirect) ----
 let tokenClient = null;
 let accessToken = null;
-
 function getClientId(){ return localStorage.getItem('gcal_client_id') || ''; }
-
 function setStatus(msg, cls){
   const el = document.getElementById('statusMsg');
   el.textContent = msg;
   el.className = 'status' + (cls ? ' '+cls : '');
 }
-
 function initGIS(){
   const cid = getClientId();
   if(!cid || !window.google || !google.accounts) return;
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: cid,
     scope: 'https://www.googleapis.com/auth/calendar.events',
-    callback: ()=>{} // overridden per-call
+    callback: ()=>{}
   });
 }
-
 function ensureToken(forceConsent){
   return new Promise((resolve, reject)=>{
     const cid = getClientId();
@@ -412,11 +471,8 @@ function ensureToken(forceConsent){
     if(!tokenClient){ reject({code:'gis-not-ready'}); return; }
     tokenClient.callback = (resp)=>{
       if(resp.error){
-        if(!forceConsent){
-          ensureToken(true).then(resolve).catch(reject);
-        } else {
-          reject(resp);
-        }
+        if(!forceConsent){ ensureToken(true).then(resolve).catch(reject); }
+        else reject(resp);
         return;
       }
       accessToken = resp.access_token;
@@ -425,11 +481,9 @@ function ensureToken(forceConsent){
     tokenClient.requestAccessToken({prompt: forceConsent ? 'consent' : ''});
   });
 }
-
 function toRFC3339(d){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 }
-
 async function addToCalendar(){
   try{
     setStatus('מתחבר ל-Google…');
@@ -450,50 +504,55 @@ async function addToCalendar(){
       body: JSON.stringify(body)
     });
     if(!res.ok){
-      if(res.status === 401){ accessToken = null; }
-      const err = await res.json().catch(()=>({}));
-      throw err;
+      if(res.status === 401) accessToken = null;
+      throw await res.json().catch(()=>({}));
     }
-    const data = await res.json();
     setStatus('✅ האירוע נוסף ליומן שלך', 'ok');
     document.getElementById('input').value = '';
     setTimeout(()=>{
       document.getElementById('previewCard').classList.remove('show');
-      document.getElementById('editGrid').classList.remove('show');
       setStatus('');
     }, 1800);
   } catch(err){
     if(err && err.code === 'no-client-id'){
-      document.getElementById('settingsPanel').classList.add('show');
-      setStatus('צריך קודם להגדיר Google Client ID למעלה (⚙️)', 'err');
+      openSheet('settingsPanel');
+      setStatus('צריך קודם להגדיר Google Client ID (⚙️)', 'err');
     } else {
       setStatus('❌ לא הצלחנו להוסיף את האירוע, נסה שוב', 'err');
     }
   }
 }
 
-document.getElementById('settingsToggle').addEventListener('click', ()=>{
-  document.getElementById('clientIdInput').value = getClientId();
-  document.getElementById('settingsPanel').classList.toggle('show');
-});
-document.getElementById('saveClientId').addEventListener('click', ()=>{
-  localStorage.setItem('gcal_client_id', document.getElementById('clientIdInput').value.trim());
-  accessToken = null;
-  initGIS();
-  document.getElementById('settingsPanel').classList.remove('show');
-  setStatus('נשמר ✓', 'ok');
-});
-window.addEventListener('load', initGIS);
+// ---- Sheets ----
+function openSheet(id){
+  document.getElementById(id).classList.add('show');
+  document.getElementById('backdrop').classList.add('show');
+}
+function closeAllSheets(){
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
+  document.getElementById('backdrop').classList.remove('show');
+}
+function closeSheet(id){ closeAllSheets(); }
 
 document.getElementById('analyzeBtn').addEventListener('click', ()=>{
   document.getElementById('input').blur();
   analyze();
 });
-document.getElementById('editBtn').addEventListener('click', ()=>{
-  document.getElementById('editGrid').classList.toggle('show');
-});
+document.getElementById('editBtn').addEventListener('click', ()=>openSheet('editSheet'));
 document.getElementById('applyBtn').addEventListener('click', applyEdits);
 document.getElementById('calBtn').addEventListener('click', addToCalendar);
+document.getElementById('backdrop').addEventListener('click', closeAllSheets);
+document.getElementById('settingsToggle').addEventListener('click', ()=>{
+  document.getElementById('clientIdInput').value = getClientId();
+  openSheet('settingsPanel');
+});
+document.getElementById('saveClientId').addEventListener('click', ()=>{
+  localStorage.setItem('gcal_client_id', document.getElementById('clientIdInput').value.trim());
+  accessToken = null;
+  initGIS();
+  closeAllSheets();
+  setStatus('נשמר ✓', 'ok');
+});
 document.querySelectorAll('.chip').forEach(ch=>{
   ch.addEventListener('click', ()=>{
     document.getElementById('input').value = ch.dataset.ex;
@@ -503,6 +562,13 @@ document.querySelectorAll('.chip').forEach(ch=>{
 document.getElementById('input').addEventListener('keydown', (e)=>{
   if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); analyze(); }
 });
+window.addEventListener('load', initGIS);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
