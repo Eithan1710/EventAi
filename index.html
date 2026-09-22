@@ -70,13 +70,7 @@ textarea:focus{outline:none;}
 }
 .chip:active{transform:scale(.95);}
 
-.cta-fixed{
-  position:sticky; bottom:0; left:0; right:0; z-index:20;
-  margin:10px -18px 0; padding:14px 18px calc(var(--sab) + 14px);
-  background:linear-gradient(to top, var(--bg) 60%, transparent);
-  transform:translateY(0); transition:transform .2s ease;
-}
-body.has-preview .cta-fixed{transform:translateY(120%); pointer-events:none;}
+.composer .btn-primary{margin-top:14px;}
 .btn{
   width:100%; border:none; border-radius:var(--r-md); padding:16px; font-size:16px; font-weight:700;
   cursor:pointer; font-family:inherit; min-height:54px;
@@ -92,15 +86,10 @@ body.has-preview .cta-fixed{transform:translateY(120%); pointer-events:none;}
   border-top-color:#fff; animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{animation:pulse 1.1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.55;}}
 
 /* Event card */
-.event-card{display:none;}
-.event-card.show{display:block; animation:cardIn .3s cubic-bezier(.2,.8,.2,1);}
-@keyframes cardIn{from{opacity:0; transform:translateY(14px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
-.event-card{
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
-  padding:22px; box-shadow:0 20px 50px -25px rgba(0,0,0,.6);
-}
 .event-head{display:flex; align-items:center; gap:13px; margin-bottom:16px;}
 .event-badge{
   width:52px; height:52px; border-radius:16px; background:var(--accent2-dim);
@@ -116,6 +105,14 @@ body.has-preview .cta-fixed{transform:translateY(120%); pointer-events:none;}
 .toast{font-size:13.5px; margin-top:12px; text-align:center; min-height:0; line-height:1.5;}
 .toast.ok{color:var(--accent2);}
 .toast.err{color:var(--danger);}
+.success-state{display:none; flex-direction:column; align-items:center; justify-content:center; padding:22px 0 10px; gap:12px;}
+.check-badge{
+  width:62px; height:62px; border-radius:50%; background:var(--accent2-dim); color:var(--accent2);
+  font-size:28px; display:flex; align-items:center; justify-content:center;
+  animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop{from{transform:scale(.4); opacity:0;} to{transform:scale(1); opacity:1;}}
+.success-label{font-size:15px; font-weight:700;}
 
 /* Sheets */
 .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .2s; z-index:40;}
@@ -157,35 +154,41 @@ input[type=text], input[type=date], input[type=time], select{
         <button type="button" class="chip" data-ex="סלסה ביום שלישי">סלסה ביום שלישי</button>
         <button type="button" class="chip" data-ex="ארוחה בתל אביב בערב">ארוחה בתל אביב בערב</button>
       </div>
-    </div>
-
-    <div class="event-card" id="previewCard">
-      <div class="event-head">
-        <span class="event-badge" id="catIcon">📌</span>
-        <div class="event-title" id="pTitle">שם האירוע</div>
-      </div>
-      <div class="event-meta">
-        <div class="meta-row" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
-        <div class="meta-row"><span class="ico">📅</span><span id="pDate">-</span></div>
-        <div class="meta-row"><span class="ico">🕐</span><span id="pTime">-</span></div>
-        <div class="meta-row"><span class="ico">🏷️</span><span id="pCat">-</span></div>
-      </div>
-      <span class="pill" id="overnightNote" style="display:none;"></span>
-      <div class="event-actions">
-        <button type="button" class="btn btn-secondary" id="editBtn">עריכה</button>
-        <button type="button" class="btn btn-primary" id="calBtn">אישור</button>
-      </div>
-      <div class="toast" id="statusMsg"></div>
+      <button type="button" class="btn btn-primary" id="analyzeBtn">
+        <span class="spinner" id="spinner" style="display:none;"></span>
+        <span id="analyzeLabel">צור אירוע</span>
+      </button>
     </div>
   </main>
-
-  <button type="button" class="cta-fixed btn btn-primary" id="analyzeBtn">
-    <span class="spinner" id="spinner" style="display:none;"></span>
-    <span id="analyzeLabel">צור אירוע</span>
-  </button>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
+
+<div class="sheet" id="previewSheet">
+  <div class="sheet-handle"></div>
+  <div id="previewContent">
+    <div class="event-head">
+      <span class="event-badge" id="catIcon">📌</span>
+      <div class="event-title" id="pTitle">שם האירוע</div>
+    </div>
+    <div class="event-meta">
+      <div class="meta-row" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
+      <div class="meta-row"><span class="ico">📅</span><span id="pDate">-</span></div>
+      <div class="meta-row"><span class="ico">🕐</span><span id="pTime">-</span></div>
+      <div class="meta-row"><span class="ico">🏷️</span><span id="pCat">-</span></div>
+    </div>
+    <span class="pill" id="overnightNote" style="display:none;"></span>
+    <div class="event-actions">
+      <button type="button" class="btn btn-secondary" id="editBtn">עריכה</button>
+      <button type="button" class="btn btn-primary" id="calBtn">✓ אישור</button>
+    </div>
+    <div class="toast" id="statusMsg"></div>
+  </div>
+  <div class="success-state" id="successState">
+    <div class="check-badge">✓</div>
+    <div class="success-label">נוסף ליומן</div>
+  </div>
+</div>
 
 <div class="sheet" id="editSheet">
   <div class="sheet-handle"></div>
@@ -348,8 +351,10 @@ function splitLocation(text){
 let state = null;
 
 function setBtnLoading(on){
+  const label = document.getElementById('analyzeLabel');
   document.getElementById('spinner').style.display = on ? 'inline-block' : 'none';
-  document.getElementById('analyzeLabel').textContent = on ? 'מנתח…' : 'צור אירוע';
+  label.textContent = on ? 'מעבד את האירוע…' : 'צור אירוע';
+  label.classList.toggle('loading-label', on);
   document.getElementById('analyzeBtn').disabled = on;
 }
 
@@ -358,49 +363,51 @@ function analyze(){
   if(!raw) return;
   setBtnLoading(true);
 
-  const cat = detectCategory(raw);
-  const dr = detectDateRange(raw);
+  setTimeout(()=>{
+    const cat = detectCategory(raw);
+    const dr = detectDateRange(raw);
 
-  const labeled = detectLabeledTimes(raw);
-  let times, timeStrs;
-  if(labeled){
-    times = labeled; timeStrs = labeled.strs.slice();
-  } else {
-    times = detectTimes(raw);
-    const rangeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
-    const singleMatch = raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
-    timeStrs = [rangeMatch?rangeMatch[0]:null, singleMatch?singleMatch[0]:null].filter(Boolean);
-  }
-  if(!times.start){
-    for(const w in TIME_OF_DAY){
-      if(raw.includes(w)){ times = {start:TIME_OF_DAY[w], end:null}; timeStrs.push(w); break; }
+    const labeled = detectLabeledTimes(raw);
+    let times, timeStrs;
+    if(labeled){
+      times = labeled; timeStrs = labeled.strs.slice();
+    } else {
+      times = detectTimes(raw);
+      const rangeMatch = raw.match(/(?:בין|מ-?|משעה)?\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?\s*(?:-|–|עד|ל-?)\s*\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+      const singleMatch = raw.match(/(?:ב-?|בשעה\s*)\d{1,2}(?::\d{2})?(?:\s*וחצי)?/);
+      timeStrs = [rangeMatch?rangeMatch[0]:null, singleMatch?singleMatch[0]:null].filter(Boolean);
     }
-  }
+    if(!times.start){
+      for(const w in TIME_OF_DAY){
+        if(raw.includes(w)){ times = {start:TIME_OF_DAY[w], end:null}; timeStrs.push(w); break; }
+      }
+    }
 
-  let clean = stripStrings(raw, dr.strs);
-  clean = stripStrings(clean, timeStrs);
-  clean = cleanConnectors(clean);
-  const {title, location} = splitLocation(clean);
+    let clean = stripStrings(raw, dr.strs);
+    clean = stripStrings(clean, timeStrs);
+    clean = cleanConnectors(clean);
+    const {title, location} = splitLocation(clean);
 
-  const startH = times.start ? times.start.h : 19;
-  const startM = times.start ? times.start.m : 0;
-  let endH, endM;
-  if(times.end){ endH=times.end.h; endM=times.end.m; } else { endH=(startH+1)%24; endM=startM; }
+    const startH = times.start ? times.start.h : 19;
+    const startM = times.start ? times.start.m : 0;
+    let endH, endM;
+    if(times.end){ endH=times.end.h; endM=times.end.m; } else { endH=(startH+1)%24; endM=startM; }
 
-  let startDate = new Date(dr.start); startDate.setHours(startH, startM, 0, 0);
-  let endBase = (dr.multiDay && dr.end) ? dr.end : dr.start;
-  let endDate = new Date(endBase); endDate.setHours(endH, endM, 0, 0);
-  let overnight = false;
-  if(!dr.multiDay && endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
-  const multiDay = startDate.toDateString() !== endDate.toDateString();
+    let startDate = new Date(dr.start); startDate.setHours(startH, startM, 0, 0);
+    let endBase = (dr.multiDay && dr.end) ? dr.end : dr.start;
+    let endDate = new Date(endBase); endDate.setHours(endH, endM, 0, 0);
+    let overnight = false;
+    if(!dr.multiDay && endDate <= startDate){ endDate.setDate(endDate.getDate()+1); overnight = true; }
+    const multiDay = startDate.toDateString() !== endDate.toDateString();
 
-  state = { title: title || 'אירוע חדש', cat: cat.k, start: startDate, end: endDate, location, notes:'', overnight, multiDay };
-  fillCatSelect();
-  render();
-  setBtnLoading(false);
-  document.getElementById('previewCard').classList.add('show');
-  document.body.classList.add('has-preview');
-  document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
+    state = { title: title || 'אירוע חדש', cat: cat.k, start: startDate, end: endDate, location, notes:'', overnight, multiDay };
+    fillCatSelect();
+    render();
+    setBtnLoading(false);
+    document.getElementById('previewContent').style.display = 'block';
+    document.getElementById('successState').style.display = 'none';
+    openSheet('previewSheet');
+  }, 380);
 }
 
 function fillCatSelect(){
@@ -456,7 +463,7 @@ function applyEdits(){
     overnight, multiDay
   };
   render();
-  closeSheet('editSheet');
+  switchSheet('editSheet', 'previewSheet');
 }
 
 // ---- Google Calendar (in-page, no redirect) ----
@@ -521,16 +528,19 @@ async function addToCalendar(){
       if(res.status === 401) accessToken = null;
       throw await res.json().catch(()=>({}));
     }
-    setStatus('✅ האירוע נוסף ליומן שלך', 'ok');
-    document.getElementById('input').value = '';
+    setStatus('');
+    document.getElementById('previewContent').style.display = 'none';
+    document.getElementById('successState').style.display = 'flex';
     setTimeout(()=>{
-      document.getElementById('previewCard').classList.remove('show');
-      document.body.classList.remove('has-preview');
-      setStatus('');
-    }, 1800);
+      closeAllSheets();
+      document.getElementById('input').value = '';
+      document.getElementById('chips').classList.remove('hidden');
+      document.getElementById('previewContent').style.display = 'block';
+      document.getElementById('successState').style.display = 'none';
+    }, 1300);
   } catch(err){
     if(err && err.code === 'no-client-id'){
-      openSheet('settingsPanel');
+      switchSheet('previewSheet','settingsPanel');
       setStatus('צריך קודם להגדיר Google Client ID (⚙️)', 'err');
     } else {
       setStatus('❌ לא הצלחנו להוסיף את האירוע, נסה שוב', 'err');
@@ -548,12 +558,17 @@ function closeAllSheets(){
   document.getElementById('backdrop').classList.remove('show');
 }
 function closeSheet(id){ closeAllSheets(); }
+function switchSheet(fromId, toId){
+  document.getElementById(fromId).classList.remove('show');
+  document.getElementById(toId).classList.add('show');
+  document.getElementById('backdrop').classList.add('show');
+}
 
 document.getElementById('analyzeBtn').addEventListener('click', ()=>{
   document.getElementById('input').blur();
   analyze();
 });
-document.getElementById('editBtn').addEventListener('click', ()=>openSheet('editSheet'));
+document.getElementById('editBtn').addEventListener('click', ()=>switchSheet('previewSheet','editSheet'));
 document.getElementById('applyBtn').addEventListener('click', applyEdits);
 document.getElementById('calBtn').addEventListener('click', addToCalendar);
 document.getElementById('backdrop').addEventListener('click', closeAllSheets);
