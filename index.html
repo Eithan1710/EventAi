@@ -17,159 +17,172 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
-  --bg:#0B0E17; --surface:#141826; --surface2:#1B2033; --border:#262C42;
-  --text:#EDEFF5; --muted:#8B92A8; --accent:#6C5CE7; --accent2:#22D3A5;
-  --danger:#F26D6D;
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
+  --bg:#0B0E17; --surface:#141826; --surface2:#1B2033; --border:#252B40;
+  --text:#EEF0F7; --muted:#8991AC; --accent:#6C5CE7; --accent-dim:rgba(108,92,231,.16);
+  --accent2:#22D3A5; --accent2-dim:rgba(34,211,165,.14); --danger:#F26D6D;
+  --r-lg:22px; --r-md:16px; --r-sm:12px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; padding:0; height:100%; overflow-x:hidden;}
+html,body{margin:0; padding:0; height:100%;}
 html{scroll-padding-top:var(--sat);}
 body{
-  background:var(--bg); color:var(--text);
-  font-family:'Heebo',sans-serif; min-height:100%;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% -10%, rgba(108,92,231,.16), transparent 60%),
+    var(--bg);
+  color:var(--text); font-family:'Heebo',sans-serif;
+  min-height:100dvh; overflow-x:hidden;
 }
 .app{
-  max-width:480px; margin:0 auto;
-  padding:calc(var(--sat) + 14px) 16px calc(var(--sab) + 24px);
-  min-height:100%;
+  max-width:480px; margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column;
+  padding:calc(var(--sat) + 14px) 18px 0;
 }
-.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
-.topbar h1{font-size:19px; font-weight:800; margin:0; letter-spacing:-.3px;}
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+.brand{font-size:17px; font-weight:800; letter-spacing:-.3px; display:flex; align-items:center; gap:7px;}
 .icon-btn{
-  width:38px; height:38px; border-radius:12px; border:1px solid var(--border);
-  background:var(--surface); color:var(--muted); font-size:17px; cursor:pointer;
+  width:38px; height:38px; border-radius:var(--r-sm); border:1px solid var(--border);
+  background:var(--surface); color:var(--muted); font-size:16px; cursor:pointer;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
-.card{
-  background:var(--surface); border:1px solid var(--border); border-radius:20px;
-  padding:18px; margin-bottom:14px;
+.icon-btn:active{transform:scale(.94);}
+
+.stage{flex:1; display:flex; flex-direction:column; justify-content:center; gap:16px; padding-bottom:16px;}
+
+.composer{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:18px; box-shadow:0 20px 50px -25px rgba(0,0,0,.6);
 }
-label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px; font-weight:500;}
 textarea{
-  width:100%; min-height:84px; background:var(--surface2); color:var(--text);
-  border:1px solid var(--border); border-radius:14px; padding:14px; font-size:16px;
-  font-family:inherit; resize:none; line-height:1.5; transition:border-color .15s;
+  width:100%; min-height:76px; background:transparent; color:var(--text);
+  border:none; padding:0; font-size:17.5px; font-family:inherit; resize:none;
+  line-height:1.5;
 }
-textarea:focus{outline:none; border-color:var(--accent);}
-.examples{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+textarea::placeholder{color:var(--muted);}
+textarea:focus{outline:none;}
+.composer.focused{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim), 0 20px 50px -25px rgba(0,0,0,.6);}
+
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; transition:opacity .15s, max-height .2s; overflow:hidden;}
+.chips.hidden{opacity:0; max-height:0; margin-top:0;}
 .chip{
   background:var(--surface2); border:1px solid var(--border); color:var(--muted);
-  padding:8px 12px; border-radius:100px; font-size:12.5px; cursor:pointer;
+  padding:8px 13px; border-radius:100px; font-size:12.5px; cursor:pointer; font-family:inherit;
 }
-.chip:active{transform:scale(.96);}
+.chip:active{transform:scale(.95);}
+
+.cta-fixed{
+  position:sticky; bottom:0; left:0; right:0; z-index:20;
+  margin:10px -18px 0; padding:14px 18px calc(var(--sab) + 14px);
+  background:linear-gradient(to top, var(--bg) 60%, transparent);
+  transform:translateY(0); transition:transform .2s ease;
+}
+body.has-preview .cta-fixed{transform:translateY(120%); pointer-events:none;}
 .btn{
-  width:100%; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:700;
-  cursor:pointer; font-family:inherit; min-height:52px;
+  width:100%; border:none; border-radius:var(--r-md); padding:16px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:inherit; min-height:54px;
   display:flex; align-items:center; justify-content:center; gap:8px;
   transition:transform .1s, opacity .15s;
 }
 .btn:active{transform:scale(.98);}
 .btn:disabled{opacity:.55; pointer-events:none;}
-.btn-primary{background:var(--accent); color:#fff; margin-top:14px;}
-.btn-cal{background:var(--accent2); color:#08261e;}
-.btn-ghost{background:var(--surface2); border:1px solid var(--border); color:var(--text);}
-.row2{display:flex; gap:10px; margin-top:14px;}
-.row2 .btn{flex:1; margin-top:0;}
+.btn-primary{background:var(--accent); color:#fff; box-shadow:0 12px 24px -10px rgba(108,92,231,.55);}
+.btn-secondary{background:var(--surface2); color:var(--text); border:1px solid var(--border);}
 .spinner{
   width:17px; height:17px; border-radius:50%; border:2.5px solid rgba(255,255,255,.35);
   border-top-color:#fff; animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg);}}
 
-.preview{display:none;}
-.preview.show{display:block; animation:up .25s ease;}
-@keyframes up{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
-.p-title{font-size:21px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:9px;}
-.p-line{display:flex; align-items:center; gap:10px; font-size:15px; padding:7px 0; border-bottom:1px solid var(--border);}
-.p-line:last-of-type{border-bottom:none;}
-.p-line .ico{width:20px; text-align:center; opacity:.85; flex-shrink:0;}
-.badge{display:inline-block; font-size:12px; color:var(--accent2); background:rgba(34,211,165,.12); padding:4px 10px; border-radius:100px; margin-top:10px;}
-
-.status{font-size:13.5px; margin-top:12px; text-align:center; min-height:0; line-height:1.6;}
-.status.ok{color:var(--accent2);}
-.status.err{color:var(--danger);}
-
-/* Bottom sheets */
-.backdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none;
-  transition:opacity .2s; z-index:40;
+/* Event card */
+.event-card{display:none;}
+.event-card.show{display:block; animation:cardIn .3s cubic-bezier(.2,.8,.2,1);}
+@keyframes cardIn{from{opacity:0; transform:translateY(14px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+.event-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:22px; box-shadow:0 20px 50px -25px rgba(0,0,0,.6);
 }
+.event-head{display:flex; align-items:center; gap:13px; margin-bottom:16px;}
+.event-badge{
+  width:52px; height:52px; border-radius:16px; background:var(--accent2-dim);
+  display:flex; align-items:center; justify-content:center; font-size:25px; flex-shrink:0;
+}
+.event-title{font-size:21px; font-weight:800; line-height:1.25;}
+.event-meta{display:flex; flex-direction:column; gap:11px; margin-bottom:8px;}
+.meta-row{display:flex; align-items:center; gap:11px; font-size:15px; color:var(--text);}
+.meta-row .ico{width:20px; text-align:center; opacity:.8; flex-shrink:0; font-size:15px;}
+.pill{display:inline-block; font-size:12px; color:var(--accent2); background:var(--accent2-dim); padding:5px 11px; border-radius:100px; margin-top:6px;}
+.event-actions{display:flex; gap:10px; margin-top:20px;}
+.event-actions .btn{margin-top:0;}
+.toast{font-size:13.5px; margin-top:12px; text-align:center; min-height:0; line-height:1.5;}
+.toast.ok{color:var(--accent2);}
+.toast.err{color:var(--danger);}
+
+/* Sheets */
+.backdrop{position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .2s; z-index:40;}
 .backdrop.show{opacity:1; pointer-events:auto;}
 .sheet{
   position:fixed; left:0; right:0; bottom:0; background:var(--surface);
-  border-radius:22px 22px 0 0; padding:10px 18px calc(var(--sab) + 20px);
+  border-radius:24px 24px 0 0; padding:10px 18px calc(var(--sab) + 20px);
   max-width:480px; margin:0 auto; transform:translateY(100%);
-  transition:transform .25s ease; z-index:50; max-height:85vh; overflow-y:auto;
+  transition:transform .25s cubic-bezier(.2,.8,.2,1); z-index:50; max-height:85vh; overflow-y:auto;
   border:1px solid var(--border); border-bottom:none;
 }
 .sheet.show{transform:translateY(0);}
-.sheet-handle{width:36px; height:4px; background:var(--border); border-radius:4px; margin:6px auto 14px;}
-.sheet h2{font-size:17px; margin:0 0 16px; font-weight:700;}
-.field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
-input[type=text], input[type=date], input[type=time]{
+.sheet-handle{width:36px; height:4px; background:var(--border); border-radius:4px; margin:6px auto 16px;}
+.sheet h2{font-size:17px; margin:0 0 16px; font-weight:800;}
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:13px;}
+.field label{font-size:12.5px; color:var(--muted); font-weight:500;}
+input[type=text], input[type=date], input[type=time], select{
   background:var(--surface2); color:var(--text); border:1px solid var(--border);
-  border-radius:12px; padding:13px 12px; font-size:16px; font-family:inherit; width:100%;
-}
-select{
-  background:var(--surface2); color:var(--text); border:1px solid var(--border);
-  border-radius:12px; padding:13px 12px; font-size:16px; font-family:inherit; width:100%;
+  border-radius:var(--r-sm); padding:13px 12px; font-size:16px; font-family:inherit; width:100%;
 }
 .timegrid{display:flex; gap:10px;}
 .timegrid .field{flex:1;}
-.settings p{font-size:12.5px; color:var(--muted); line-height:1.7; margin:0 0 12px;}
+.settings p{font-size:12.5px; color:var(--muted); line-height:1.65; margin:0 0 14px;}
 .settings a{color:var(--accent2);}
-
-.foot{text-align:center; color:var(--muted); font-size:11.5px; margin-top:22px; line-height:1.7;}
-
-@media (prefers-color-scheme: light){
-  :root:not([data-theme="dark"]){
-    --bg:#F5F6FA; --surface:#fff; --surface2:#F0F1F6; --border:#E4E6EF; --text:#161A2B; --muted:#767C93;
-  }
-}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
+    <div class="brand">📅 Event Planner</div>
     <button type="button" class="icon-btn" id="settingsToggle">⚙️</button>
-    <h1>📅 Event Planner</h1>
-    <span style="width:38px"></span>
   </div>
 
-  <div class="card">
-    <label for="input">מה האירוע?</label>
-    <textarea id="input" placeholder="סלסה ביום שלישי בערב"></textarea>
-    <div class="examples">
-      <div class="chip" data-ex="סלסה ביום שלישי בערב">סלסה ביום שלישי בערב</div>
-      <div class="chip" data-ex="סרט בקניון גי ביום חמישי ב-20:00">סרט בקניון גי ביום חמישי 20:00</div>
-      <div class="chip" data-ex="מסיבת יום הולדת בבית של אילאי בשבת ב-21:00">מסיבת יום הולדת בשבת 21:00</div>
+  <main class="stage">
+    <div class="composer" id="composer">
+      <textarea id="input" rows="3" placeholder="מה קורה? למשל: סרט בקניון גי ביום חמישי 20:00"></textarea>
+      <div class="chips" id="chips">
+        <button type="button" class="chip" data-ex="סרט בקניון גי">סרט בקניון גי</button>
+        <button type="button" class="chip" data-ex="סלסה ביום שלישי">סלסה ביום שלישי</button>
+        <button type="button" class="chip" data-ex="ארוחה בתל אביב בערב">ארוחה בתל אביב בערב</button>
+      </div>
     </div>
-    <button type="button" class="btn btn-primary" id="analyzeBtn">
-      <span class="spinner" id="spinner" style="display:none;"></span>
-      <span id="analyzeLabel">צור אירוע</span>
-    </button>
-  </div>
 
-  <div class="card preview" id="previewCard">
-    <div class="p-title"><span id="catIcon">📌</span><span id="pTitle">שם האירוע</span></div>
-    <div class="p-line" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
-    <div class="p-line"><span class="ico">📅</span><span id="pDate">-</span></div>
-    <div class="p-line"><span class="ico">🕐</span><span id="pTime">-</span></div>
-    <div class="p-line"><span class="ico">🏷️</span><span id="pCat">-</span></div>
-    <span class="badge" id="overnightNote" style="display:none;"></span>
-
-    <div class="row2">
-      <button type="button" class="btn btn-ghost" id="editBtn">✏️ עריכה</button>
-      <button type="button" class="btn btn-cal" id="calBtn">✅ הוסף ליומן</button>
+    <div class="event-card" id="previewCard">
+      <div class="event-head">
+        <span class="event-badge" id="catIcon">📌</span>
+        <div class="event-title" id="pTitle">שם האירוע</div>
+      </div>
+      <div class="event-meta">
+        <div class="meta-row" id="pLocLine" style="display:none;"><span class="ico">📍</span><span id="pLoc">-</span></div>
+        <div class="meta-row"><span class="ico">📅</span><span id="pDate">-</span></div>
+        <div class="meta-row"><span class="ico">🕐</span><span id="pTime">-</span></div>
+        <div class="meta-row"><span class="ico">🏷️</span><span id="pCat">-</span></div>
+      </div>
+      <span class="pill" id="overnightNote" style="display:none;"></span>
+      <div class="event-actions">
+        <button type="button" class="btn btn-secondary" id="editBtn">עריכה</button>
+        <button type="button" class="btn btn-primary" id="calBtn">אישור</button>
+      </div>
+      <div class="toast" id="statusMsg"></div>
     </div>
-    <div class="status" id="statusMsg"></div>
-  </div>
+  </main>
 
-  <div class="foot">
-    הטקסט נשאר בדפדפן שלך. האירוע נכתב ישירות ליומן Google שלך דרך ה-API הרשמי, בלי לצאת מהעמוד.
-  </div>
+  <button type="button" class="cta-fixed btn btn-primary" id="analyzeBtn">
+    <span class="spinner" id="spinner" style="display:none;"></span>
+    <span id="analyzeLabel">צור אירוע</span>
+  </button>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
@@ -178,7 +191,7 @@ select{
   <div class="sheet-handle"></div>
   <h2>עריכת אירוע</h2>
   <div class="field"><label>שם האירוע</label><input type="text" id="eTitle"></div>
-  <div class="field"><label>מיקום</label><input type="text" id="eLoc" placeholder="לדוגמה: קניון גי"></div>
+  <div class="field"><label>מיקום</label><input type="text" id="eLoc" placeholder="קניון גי"></div>
   <div class="field"><label>תאריך התחלה</label><input type="date" id="eDate"></div>
   <div class="field"><label>תאריך סיום</label><input type="date" id="eEndDate"></div>
   <div class="timegrid">
@@ -194,8 +207,8 @@ select{
   <div class="sheet-handle"></div>
   <h2>הגדרות</h2>
   <p>
-    כדי שהאתר יוכל להוסיף אירועים ליומן שלך בלי לצאת מהעמוד, צריך Google OAuth Client ID אישי (פעם אחת, חינם).
-    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">פתח Google Cloud Console</a> → צור Client ID מסוג "Web application" → הוסף את כתובת האתר הזה כ-Authorized JavaScript origin.
+    צריך Google OAuth Client ID אישי (פעם אחת, חינם) כדי להוסיף אירועים ליומן בלי לצאת מהעמוד.
+    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> → Client ID מסוג Web application → הוסף את כתובת האתר הזה כ-Authorized JavaScript origin.
   </p>
   <div class="field"><label>Google Client ID</label><input type="text" id="clientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com"></div>
   <button type="button" class="btn btn-primary" id="saveClientId">שמור</button>
@@ -386,6 +399,7 @@ function analyze(){
   render();
   setBtnLoading(false);
   document.getElementById('previewCard').classList.add('show');
+  document.body.classList.add('has-preview');
   document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
@@ -511,6 +525,7 @@ async function addToCalendar(){
     document.getElementById('input').value = '';
     setTimeout(()=>{
       document.getElementById('previewCard').classList.remove('show');
+      document.body.classList.remove('has-preview');
       setStatus('');
     }, 1800);
   } catch(err){
@@ -561,6 +576,15 @@ document.querySelectorAll('.chip').forEach(ch=>{
 });
 document.getElementById('input').addEventListener('keydown', (e)=>{
   if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); analyze(); }
+});
+document.getElementById('input').addEventListener('input', (e)=>{
+  document.getElementById('chips').classList.toggle('hidden', e.target.value.trim().length>0);
+});
+document.getElementById('input').addEventListener('focus', ()=>{
+  document.getElementById('composer').classList.add('focused');
+});
+document.getElementById('input').addEventListener('blur', ()=>{
+  document.getElementById('composer').classList.remove('focused');
 });
 window.addEventListener('load', initGIS);
 
